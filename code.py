@@ -301,7 +301,8 @@ temp_control_lp_prev = Tboiler
 CP = 0.3
 CI = CP*0.8
 CD = CP*20.
-
+LPmu = 0.1
+LP1mu = 1.0-LPmu
 
 while True:
 
@@ -320,18 +321,15 @@ while True:
         Pbrew, V = read_Psensor(pressurePiston)
 
         temp_control = Tboiler
-        temp_control_lp = 0.97*temp_control_lp + 0.03*temp_control
+        temp_control_lp = LP1mu*temp_control_lp + LPmu*temp_control
         temp_gradient = temp_control_lp - temp_control_lp_prev;
         temp_control_lp_prev = temp_control_lp
         
         err = config_data['TempSetPoint'] - temp_control
 
-        if err > 0.:
-            Pwr = CP*err ## Proportional Part
-        else:
-            Pwr = 0.
+        Pwr = CP*err ## Proportional Part
 
-        if abs(err) > 5.:
+        if abs(err) < 10.:
             PwrI += CI*err
         else:
             PwrI = 0.
@@ -398,7 +396,7 @@ while True:
             ssr.value = False  # Too hot! Turn off heating element
             time.sleep(t_off)
 
-        t += CYCLE_TIME ## + eps ??
+        t += CYCLE_TIME ## + eps processing ??
 
         if Pbrew > 0.1:
             if len(config_data['data_time']) > MAX_LENGTH:
