@@ -300,7 +300,7 @@ temp_control_lp_prev = Tboiler
 
 CP = 0.3
 CI = CP*0.8
-CD = CP*20.
+CD = CP*10.
 LPmu = 0.1
 LP1mu = 1.0-LPmu
 
