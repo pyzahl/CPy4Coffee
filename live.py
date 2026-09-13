@@ -42,9 +42,23 @@ ax_graph_t = fig.add_subplot(223, facecolor='#1e1e1e')
 ax_graph_p = fig.add_subplot(224, facecolor='#1e1e1e')
 
 # Initialize static history line objects once
-line_tboiler, = ax_graph_t.plot([], [], label="Boiler", color="#ff3b30", linewidth=1.5)
-line_tbrew,   = ax_graph_t.plot([], [], label="Brew", color="#darkorange", linewidth=1.5)
-line_pressure, = ax_graph_p.plot([], [], label="Pressure", color="#007aff", linewidth=1.5)
+line_tboiler, = ax_graph_t.plot([0,100], [0, 125], label="Boiler", color="#ff3b30", linewidth=1.5)
+line_tbrew,   = ax_graph_t.plot([0,100], [0, 125], label="Brew", color="darkorange", linewidth=1.5)
+line_pressure, = ax_graph_p.plot([0,100], [00, 15], label="Pressure", color="#007aff", linewidth=1.5)
+
+
+ax_graph_t.set_xlabel("Time (min)")
+ax_graph_t.set_ylabel("Temperature (°C)")
+ax_graph_t.set_title("Boiler and Brew Temperature Over Time")
+ax_graph_t.legend()
+ax_graph_t.grid(True)
+
+ax_graph_p.set_xlabel("Time (min)")
+ax_graph_p.set_ylabel("Brew Pressue (bar)")
+ax_graph_p.set_title("Brew Pressure Over Time")
+ax_graph_p.legend()
+ax_graph_p.grid(True)
+
 
 # Buffers
 data_time, data_tbrew, data_tboiler, data_pressure = [], [], [], []
