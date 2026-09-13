@@ -41,6 +41,14 @@ ax_press.set_thetalim(MIN_RAD, MAX_RAD)
 ax_graph_t = fig.add_subplot(223, facecolor='#1e1e1e')
 ax_graph_p = fig.add_subplot(224, facecolor='#1e1e1e')
 
+# Initialize static history line objects once
+line_tboiler, = ax_graph_t.plot([], [], label="Boiler", color="#ff3b30", linewidth=1.5)
+line_tbrew,   = ax_graph_t.plot([], [], label="Brew", color="#darkorange", linewidth=1.5)
+line_pressure, = ax_graph_p.plot([], [], label="Pressure", color="#007aff", linewidth=1.5)
+
+# Buffers
+data_time, data_tbrew, data_tboiler, data_pressure = [], [], [], []
+
 
 # --- STYLE THE DIALS ---
 def style_gauge(ax, title, max_val, unit, ticks):
@@ -77,11 +85,6 @@ needle_press, text_press = style_gauge(ax_press, "EXTRACTION PRESSURE", 12.0, "b
 needle_temp.set_color('#ff3b30')  # Red alert for hot boiler
 needle_press.set_color('#007aff') # Deep blue for extraction pressure water
 
-data_time = []
-data_tbrew = []
-data_tboiler = []
-data_pressure  = []
-
 # --- LIVE REFRESH DATA PIPELINE ---
 def update_gauges(frame):
     # Continuously parse any incoming text hanging in the system serial buffer
@@ -103,6 +106,13 @@ def update_gauges(frame):
                 data_tboiler.append (current_boiler_temp)
                 data_tbrew.append (current_brew_temp)
                 data_pressure.append (current_pressure)
+
+                if len(data_time) > 300:
+                    data_time.pop(0)
+                    data_tboiler.pop(0)
+                    data_tbrew.pop(0)
+                    data_pressure.pop(0)
+
                 
                 # --- CALCULATE NEEDLE ANGLES ---
                 # Normalize metrics proportionally against maximum gauge values
@@ -121,9 +131,9 @@ def update_gauges(frame):
                 text_temp.set_text(f"{current_boiler_temp:.1f} °C")
                 text_press.set_text(f"{current_pressure:.2f} bar")
 
-                ax_graph_t.plot (data_time, data_tboiler)
-                ax_graph_t.plot (data_time, data_tbrew)
-                ax_graph_p.plot (data_time, data_pressure)
+                line_tboiler.set_data(data_time, data_tboiler)
+                line_tbrew.set_data(data_time, data_tbrew)
+                line_pressure.set_data(data_time, data_pressure)
 
                 
         except Exception as e:
