@@ -3,6 +3,7 @@ import serial
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+from matplotlib.widgets import RadioButtons
 from scipy.signal import savgol_filter
 from scipy.signal import savgol_coeffs
 
@@ -74,6 +75,44 @@ ax_graph_p.legend()
 ax_graph_p.grid(True)
 
 
+# Default behavior state tracking
+current_scale_mode = "Max History" 
+
+# Define UI control axes position: [left, bottom, width, height]
+ax_radio = plt.axes([0.02, 0.85, 0.12, 0.12])
+
+# 1. Background color of the widget box
+ax_radio.set_facecolor('#1e1e1e')  # Set to your background hex color
+
+# 2. Modern styling dictionary setup
+custom_radio_styles = {
+    #'facecolor': ['#1d2d2d', '#1d2d2d'],  # Unselected button fill color
+    'edgecolor': ['grey', 'grey'],      # Button border line color
+    's': 49                               # Size of the circle dots (points^2)
+}
+
+custom_label_styles = {
+    'color': ['white', 'white'],          # Label text color
+    'fontsize': [10, 10]                  # Text size
+}
+
+# 3. Create the widget, passing in your style dictionaries
+radio = RadioButtons(
+    ax_radio, 
+    ('Max History', 'Last 300 Sec', 'Last 60 Sec'), 
+    activecolor='#ff0000',                # Color of the active inner dot
+    radio_props=custom_radio_styles,      # Applies circle styles
+    label_props=custom_label_styles       # Applies text styles
+)
+
+
+def change_scale_mode(label):
+    global current_scale_mode
+    current_scale_mode = label
+
+radio.on_clicked(change_scale_mode)
+
+
 # Initialize static history line objects once
 line_tboiler, = ax_graph_t.plot([], [], label="Boiler", color="#ff3b30", linewidth=1.5)
 line_tbrew,   = ax_graph_t.plot([], [], label="Brew", color="darkorange", linewidth=1.5)
@@ -125,7 +164,44 @@ def style_gauge(ax, title, max_val, unit, ticks, second_hand=False):
             alpha=0.6,            # Semi-transparent so gridlines stay visible
             zorder=0              # Puts the background color BEHIND your data lines
         )
+        theta_start = MIN_RAD + (110 / max_val) * TOTAL_RAD_SWEEP
+        theta_end   = MIN_RAD + (118 / max_val) * TOTAL_RAD_SWEEP
+        
+        theta_range = np.linspace(theta_start, theta_end, 100)
+        ax.fill_between(
+            theta_range, 
+            0.5*rmax, 
+            rmax, 
+            color='#eeee80',      # Light pastel blue/gray color
+            alpha=0.6,            # Semi-transparent so gridlines stay visible
+            zorder=0              # Puts the background color BEHIND your data lines
+        )
+        
+        theta_start = MIN_RAD + (119 / max_val) * TOTAL_RAD_SWEEP
+        theta_end   = MIN_RAD + (140 / max_val) * TOTAL_RAD_SWEEP
+        
+        theta_range = np.linspace(theta_start, theta_end, 100)
+        ax.fill_between(
+            theta_range, 
+            0.85*rmax, 
+            rmax, 
+            color='#ff2020',      # Light pastel blue/gray color
+            alpha=0.7,            # Semi-transparent so gridlines stay visible
+            zorder=0              # Puts the background color BEHIND your data lines
+        )
     else:
+        theta_start = MIN_RAD + (3 / max_val) * TOTAL_RAD_SWEEP
+        theta_end   = MIN_RAD + (6 / max_val) * TOTAL_RAD_SWEEP
+        
+        theta_range = np.linspace(theta_start, theta_end, 100)
+        ax.fill_between(
+            theta_range, 
+            0.5*rmax, 
+            rmax, 
+            color='#777777',      # Light pastel blue/gray color
+            alpha=0.6,            # Semi-transparent so gridlines stay visible
+            zorder=0              # Puts the background color BEHIND your data lines
+        )
         theta_start = MIN_RAD + (6 / max_val) * TOTAL_RAD_SWEEP
         theta_end   = MIN_RAD + (8 / max_val) * TOTAL_RAD_SWEEP
         
@@ -136,6 +212,18 @@ def style_gauge(ax, title, max_val, unit, ticks, second_hand=False):
             rmax, 
             color='#80ee80',      # Light pastel blue/gray color
             alpha=0.6,            # Semi-transparent so gridlines stay visible
+            zorder=0              # Puts the background color BEHIND your data lines
+        )
+        theta_start = MIN_RAD + (8.1 / max_val) * TOTAL_RAD_SWEEP
+        theta_end   = MIN_RAD + (12 / max_val) * TOTAL_RAD_SWEEP
+        
+        theta_range = np.linspace(theta_start, theta_end, 100)
+        ax.fill_between(
+            theta_range, 
+            0.85*rmax, 
+            rmax, 
+            color='#ff2020',      # Light pastel blue/gray color
+            alpha=0.7,            # Semi-transparent so gridlines stay visible
             zorder=0              # Puts the background color BEHIND your data lines
         )
         
@@ -203,7 +291,7 @@ def update_gauges(frame):
                 data_tbrew.append (current_brew_temp)
                 data_pressure.append (current_pressure)
                 
-                if len(data_time) > 1000:
+                if len(data_time) > 2000:
                     data_time.pop(0)
                     data_tboiler.pop(0)
                     data_tbrew.pop(0)
@@ -249,10 +337,18 @@ def update_gauges(frame):
                     line_tboiler.set_data(t, data_tboiler)
                     line_tbrew.set_data(t, data_tbrew)
                     line_pressure.set_data(t, data_pressure)
-                    
-                    ax_graph_t.set_xlim (t[0], t[-1])
+
+                    if current_scale_mode ==  "Last 60 Sec":
+                        ax_graph_t.set_xlim (t[-1]-60, t[-1])
+                        ax_graph_p.set_xlim (t[-1]-60, t[-1])
+                    elif current_scale_mode ==  "Last 300 Sec":
+                        ax_graph_t.set_xlim (t[-1]-300, t[-1])
+                        ax_graph_p.set_xlim (t[-1]-300, t[-1])
+                    else:
+                        ax_graph_t.set_xlim (t[0], t[-1])
+                        ax_graph_p.set_xlim (t[0], t[-1])
+
                     ax_graph_t.set_ylim (0, 120)
-                    ax_graph_p.set_xlim (t[0], t[-1])
                     ax_graph_p.set_ylim (0, 12)
 
 
