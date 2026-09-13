@@ -242,18 +242,17 @@ def load_settings(default):
             print("Drive Read Only. Default Always")
         return default
 
-def steinhart_temperature_C(THV, Ro=10000.0, To=25.0, beta=3950.0):
-    import math
-    R = 10000 / (65535/THV - 1)
-    steinhart = math.log(R / Ro) / beta      # log(R/Ro) / beta
-    steinhart += 1.0 / (To + 273.15)         # log(R/Ro) / beta + 1/To
-    steinhart = (1.0 / steinhart) - 273.15   # Invert, convert to C
-    return steinhart
-
 
 def get_temperature(pin):
     """Calculates temperature using the Steinhart-Hart equation."""
-    voltage = (pin.value * 3.3) / 65535
+
+    samples = 64
+    total = 0
+    for _ in range(samples):
+        total += pin.value
+    reading = total // samples
+    
+    voltage = (reading * 3.3) / 65535
     if voltage >= 3.3 or voltage <= 0:
         return 0.0 # Prevent division by zero
     

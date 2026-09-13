@@ -161,7 +161,7 @@ def style_gauge(ax, title, max_val, unit, ticks, second_hand=False):
         return needle, val_text
 
 # Configure specific bounds and accents for your espresso metrics
-needle_temp, needle2_temp, text_temp, text2_temp, setpt = style_gauge(ax_temp, "BOILER TEMPERATURE", 140.0, "°C", [0, 20, 40, 60, 80, 100, 110, 120, 140, tboiler_set_point], True)
+needle_temp, needle2_temp, text_temp, text2_temp, setpt = style_gauge(ax_temp, "BOILER & BREW TEMPERATURES", 140.0, "°C", [0, 20, 40, 60, 80, 100, 110, 120, 140, tboiler_set_point], True)
 needle_press, text_press = style_gauge(ax_press, "EXTRACTION PRESSURE", 12.0, "bar", [-1, 0, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 
 # Recolor the needles for quick visual tracking
@@ -203,7 +203,7 @@ def update_gauges(frame):
                 data_tbrew.append (current_brew_temp)
                 data_pressure.append (current_pressure)
                 
-                if len(data_time) > 300:
+                if len(data_time) > 1000:
                     data_time.pop(0)
                     data_tboiler.pop(0)
                     data_tbrew.pop(0)
