@@ -42,9 +42,9 @@ ax_graph_t = fig.add_subplot(223, facecolor='#1e1e1e')
 ax_graph_p = fig.add_subplot(224, facecolor='#1e1e1e')
 
 # Initialize static history line objects once
-line_tboiler, = ax_graph_t.plot([0,100], [0, 125], label="Boiler", color="#ff3b30", linewidth=1.5)
-line_tbrew,   = ax_graph_t.plot([0,100], [0, 125], label="Brew", color="darkorange", linewidth=1.5)
-line_pressure, = ax_graph_p.plot([0,100], [00, 15], label="Pressure", color="#007aff", linewidth=1.5)
+line_tboiler, = ax_graph_t.plot([], [], label="Boiler", color="#ff3b30", linewidth=1.5)
+line_tbrew,   = ax_graph_t.plot([], [], label="Brew", color="darkorange", linewidth=1.5)
+line_pressure, = ax_graph_p.plot([], [], label="Pressure", color="#007aff", linewidth=1.5)
 
 
 ax_graph_t.set_xlabel("Time (min)")
@@ -149,12 +149,16 @@ def update_gauges(frame):
                 line_tbrew.set_data(data_time, data_tbrew)
                 line_pressure.set_data(data_time, data_pressure)
 
+                ax_graph_t.set_xrange (data_time[0], data_time[-1])
+                ax_graph_t.set_yrange (0, 120)
+                ax_graph_p.set_xrange (data_time[0], data_time[-1])
+                ax_graph_p.set_yrange (0, 12)
                 
         except Exception as e:
             # Prevent minor string formatting glitches from crashing the telemetry loop
             pass
             
-    return needle_temp, needle_press, text_temp, text_press
+    return needle_temp, needle_press, text_temp, text_press, line_tboiler, line_tbrew, line_pressure, ax_graph_t, ax_graph_p
 
 # Initialize the 40ms frame handler loop (roughly 25fps fluid needle performance)
 ani = FuncAnimation(fig, update_gauges, interval=40, blit=True, cache_frame_data=False)
