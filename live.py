@@ -112,8 +112,7 @@ def style_gauge(ax, title, max_val, unit, ticks, second_hand=False):
     # Set Point Marker (Boiler hack)
     if second_hand:
         angle = MIN_RAD + (tboiler_set_point / max_val) * TOTAL_RAD_SWEEP
-        ax.plot([angle, angle], [rmax - stub_length, rmax + stub_length], 
-                color='yellow', linewidth=4, clip_on=False)
+        setpt = ax.plot([angle, angle], [rmax - stub_length, rmax + stub_length], color='yellow', linewidth=4, clip_on=False)[0]
         theta_start = MIN_RAD + (75 / max_val) * TOTAL_RAD_SWEEP
         theta_end   = MIN_RAD + (85 / max_val) * TOTAL_RAD_SWEEP
         
@@ -157,13 +156,13 @@ def style_gauge(ax, title, max_val, unit, ticks, second_hand=False):
     ax.scatter(0, 0, color='#cccccc', s=120, edgecolor='#000000', zorder=6)
     
     if second_hand:
-        return needle, needle2, val_text, val2_text
+        return needle, needle2, val_text, val2_text, setpt
     else:
         return needle, val_text
 
 # Configure specific bounds and accents for your espresso metrics
-needle_temp, needle2_temp, text_temp, text2_temp = style_gauge(ax_temp, "BOILER TEMPERATURE", 140.0, "°C", [0, 20, 40, 60, 80, 100, 110, 120, 140, tboiler_set_point], True)
-needle_press, text_press = style_gauge(ax_press, "EXTRACTION PRESSURE", 12.0, "bar", [0, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+needle_temp, needle2_temp, text_temp, text2_temp, setpt = style_gauge(ax_temp, "BOILER TEMPERATURE", 140.0, "°C", [0, 20, 40, 60, 80, 100, 110, 120, 140, tboiler_set_point], True)
+needle_press, text_press = style_gauge(ax_press, "EXTRACTION PRESSURE", 12.0, "bar", [-1, 0, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 
 # Recolor the needles for quick visual tracking
 needle_temp.set_color('#ff3b30')  # Red alert for hot boiler
@@ -231,6 +230,12 @@ def update_gauges(frame):
                 # Point needle arrays to new radial angles [theta, radius_length]
                 needle_temp.set_data([angle_temp, angle_temp], [0, 0.85])
                 needle2_temp.set_data([angle_tempbrew, angle_tempbrew], [0, 0.85])
+
+                rmax = 1. #ax_graph_t.get_rmax()
+                stub_length = 0.05 * rmax  # Length of the stub (5% of max radius)
+                angle = MIN_RAD + (tboiler_set_point / 140.0) * TOTAL_RAD_SWEEP
+                setpt.set_data([angle, angle], [rmax - stub_length, rmax + stub_length])
+                
                 needle_press.set_data([angle_press, angle_press], [0, 0.85])
                 
                 # Update digital reading displays
