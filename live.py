@@ -41,23 +41,27 @@ ax_press.set_thetalim(MIN_RAD, MAX_RAD)
 ax_graph_t = fig.add_subplot(223, facecolor='#1e1e1e')
 ax_graph_p = fig.add_subplot(224, facecolor='#1e1e1e')
 
+ax_graph_t.tick_params(axis='both', colors='#ffffff', labelsize=10)
+ax_graph_p.tick_params(axis='both', colors='#ffffff', labelsize=10)
+
+ax_graph_t.set_xlabel("Time in s", color='#ffffff')
+ax_graph_t.set_ylabel("Temperature in °C", color='#ffffff')
+#ax_graph_t.set_title("Boiler and Brew Temperature Over Time", color='#ffffff')
+ax_graph_t.legend()
+ax_graph_t.grid(True)
+
+ax_graph_p.set_xlabel("Time in s", color='#ffffff')
+ax_graph_p.set_ylabel("Brew Pressue in bar", color='#ffffff')
+#ax_graph_p.set_title("Brew Pressure Over Time", color='#ffffff')
+ax_graph_p.legend()
+ax_graph_p.grid(True)
+
+
 # Initialize static history line objects once
 line_tboiler, = ax_graph_t.plot([], [], label="Boiler", color="#ff3b30", linewidth=1.5)
 line_tbrew,   = ax_graph_t.plot([], [], label="Brew", color="darkorange", linewidth=1.5)
 line_pressure, = ax_graph_p.plot([], [], label="Pressure", color="#007aff", linewidth=1.5)
 
-
-ax_graph_t.set_xlabel("Time (min)")
-ax_graph_t.set_ylabel("Temperature (°C)")
-ax_graph_t.set_title("Boiler and Brew Temperature Over Time")
-ax_graph_t.legend()
-ax_graph_t.grid(True)
-
-ax_graph_p.set_xlabel("Time (min)")
-ax_graph_p.set_ylabel("Brew Pressue (bar)")
-ax_graph_p.set_title("Brew Pressure Over Time")
-ax_graph_p.legend()
-ax_graph_p.grid(True)
 
 
 # Buffers
@@ -145,23 +149,29 @@ def update_gauges(frame):
                 text_temp.set_text(f"{current_boiler_temp:.1f} °C")
                 text_press.set_text(f"{current_pressure:.2f} bar")
 
-                line_tboiler.set_data(data_time, data_tboiler)
-                line_tbrew.set_data(data_time, data_tbrew)
-                line_pressure.set_data(data_time, data_pressure)
+                t = np.array(data_time) - data_time[0]
+                if len(data_time) > 2:
 
-                ax_graph_t.set_xrange (data_time[0], data_time[-1])
-                ax_graph_t.set_yrange (0, 120)
-                ax_graph_p.set_xrange (data_time[0], data_time[-1])
-                ax_graph_p.set_yrange (0, 12)
-                
+                    line_tboiler.set_data(t, data_tboiler)
+                    line_tbrew.set_data(t, data_tbrew)
+                    line_pressure.set_data(t, data_pressure)
+                    
+                    ax_graph_t.set_xlim (t[0], t[-1])
+                    ax_graph_t.set_ylim (0, 120)
+                    ax_graph_p.set_xlim (t[0], t[-1])
+                    ax_graph_p.set_ylim (0, 12)
+
+
+
+                    
         except Exception as e:
             # Prevent minor string formatting glitches from crashing the telemetry loop
             pass
             
-    return needle_temp, needle_press, text_temp, text_press, line_tboiler, line_tbrew, line_pressure, ax_graph_t, ax_graph_p
+    return needle_temp, needle_press, text_temp, text_press, line_tboiler, line_tbrew, line_pressure
 
 # Initialize the 40ms frame handler loop (roughly 25fps fluid needle performance)
-ani = FuncAnimation(fig, update_gauges, interval=40, blit=True, cache_frame_data=False)
+ani = FuncAnimation(fig, update_gauges, interval=40, blit=False, cache_frame_data=False)
 plt.tight_layout()
 plt.show()
 
