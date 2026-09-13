@@ -21,19 +21,24 @@ from terminalio import FONT
 #from adafruit_ble.services.nordic import UARTService
 
 # --- CONFIGURATION CONSTANTS ---
-TARGET_TEMP       = 100.0    # Target boiler temperature in Celsius
-TARGET_TEMP_MAX   = 125.0
+TARGET_TEMP       = 114.0    # default (if no settings) Target boiler temperature in Celsius ~0.7bar (1.66 bar abs)
+TARGET_TEMP_MAX   = 125.0    # max cut off/limit
 TARGET_TEMP_MIN   = 0. # 60.0
-TARGET_TEMP_RESET = 100.0
+TARGET_TEMP_RESET = 114.0    # default (after reset) Target boiler temperature in Celsius ~0.7bar (1.66 bar abs)
+
+CP = 0.3
+CI = CP*0.001
+CD = CP*10.
+LPmu = 0.025
+LP1mu = 1.0-LPmu
 
 CYCLE_TIME = 0.25
-HYSTERESIS = 1.0         # Turn off at TARGET_TEMP, turn on at TARGET_TEMP - HYSTERESIS
 B_COEFFICIENT = 3950     # Thermistor Beta coefficient (check your datasheet)
 SERIES_RESISTOR = 10000  # 10k ohm series resistor
 THERMISTOR_NOMINAL = 10000 # 10k ohm resistance at 25C
 TEMP_NOMINAL = 25.0      # 25 degrees Celsius
 
-MAX_LENGTH = 100
+MAX_LENGTH = 200
 
 #ble = BLERadio()
 #uart_server = UARTService()
@@ -298,12 +303,6 @@ Tboiler=get_temperature(thermistorBoiler)
 temp_control_lp = Tboiler
 temp_control_lp_prev = Tboiler
 
-CP = 0.3
-CI = CP*0.8
-CD = CP*10.
-LPmu = 0.1
-LP1mu = 1.0-LPmu
-
 while True:
 
     
@@ -325,6 +324,8 @@ while True:
         temp_gradient = temp_control_lp - temp_control_lp_prev;
         temp_control_lp_prev = temp_control_lp
         
+        # --- PID CONTROLLER ---
+
         err = config_data['TempSetPoint'] - temp_control
 
         Pwr = CP*err ## Proportional Part
@@ -341,17 +342,14 @@ while True:
         PwrNorm = Pwr + PwrI + PwrD
 
         PwrNorm = max(0., min(PwrNorm, 1.))
-            
+        
+        if err < -0.1: # instant power cut-off
+            PwrNorm = 0.
+        
+        
         # --- BOILER TEMPERATURE CONTROL LOGIC ---
-        if 0:
-            if temp_control >= config_data['TempSetPoint']:
-                ssr.value = False  # Too hot! Turn off heating element
-            elif temp_control < (config_data['TempSetPoint'] - HYSTERESIS):
-                ssr.value = True   # Under target temperature, turn on heater
-
-            print(f"Boiler: {Tboiler:.1f}°C [Set: {config_data['TempSetPoint']:.1f}°C ] | {'ON' if ssr.value else 'OFF'} | Brew: {Tbrew:.1f}°C | {Pbrew:.2f} bar [{V:.3f} V]")
             
-        print(f"{t:8.1f} s | Boiler: {Tboiler:5.1f}°C [Set: {config_data['TempSetPoint']:5.1f}°C ] | SSR: H{PwrNorm:4.2f} | Brew: {Tbrew:5.1f}°C | {Pbrew:5.2f} bar [{V:.3f} V]")
+        print(f"{t:8.1f} s | Boiler: {Tboiler:5.1f}°C [Set: {config_data['TempSetPoint']:5.1f}°C ] | SSR: H{PwrNorm:4.2f} | Err: {err:5.1f} °C |  PP: {Pwr:5.2f} | PD: {PwrD:5.2f}  | PI: {PwrI:5.2f} | Brew: {Tbrew:5.1f}°C | {Pbrew:5.2f} bar [{V:.3f} V]")
 
         #uart_server.write('{},{},{}\n'.format(Tboiler,Tbrew,Pbrew))
         
