@@ -6,8 +6,7 @@ from matplotlib.animation import FuncAnimation
 
 # --- CONFIGURATION ---
 # Replace with your actual macOS device name from `ls /dev/cu.*`
-SERIAL_PORT = '/dev/cu.usbmodem1101'  # Example ESP32 port path
-#SERIAL_PORT = '/tmp/ttyV0'  # Example ESP32 port path
+SERIAL_PORT = '/dev/cu.usbmodemCCD82AB862271'  # Example ESP32 port path
 BAUD_RATE = 115200
 
 # Regular expression to catch the 11 floating numbers from your CPy4Coffee output
@@ -31,12 +30,17 @@ MAX_RAD = 5 * np.pi / 4    # Bottom Left
 TOTAL_RAD_SWEEP = MAX_RAD - MIN_RAD
 
 # Gauge Subplot 1: Temperature (0°C to 140°C)
-ax_temp = fig.add_subplot(121, polar=True, facecolor='#1e1e1e')
+ax_temp = fig.add_subplot(221, polar=True, facecolor='#1e1e1e')
 ax_temp.set_thetalim(MIN_RAD, MAX_RAD)
 
 # Gauge Subplot 2: Pressure (0 to 12 Bar)
-ax_press = fig.add_subplot(122, polar=True, facecolor='#1e1e1e')
+ax_press = fig.add_subplot(222, polar=True, facecolor='#1e1e1e')
 ax_press.set_thetalim(MIN_RAD, MAX_RAD)
+
+# History Graph Subplot 3: Temp, Pressure (0 to 12 Bar)
+ax_graph_t = fig.add_subplot(223, facecolor='#1e1e1e')
+ax_graph_p = fig.add_subplot(224, facecolor='#1e1e1e')
+
 
 # --- STYLE THE DIALS ---
 def style_gauge(ax, title, max_val, unit, ticks):
@@ -66,12 +70,17 @@ def style_gauge(ax, title, max_val, unit, ticks):
     return needle, val_text
 
 # Configure specific bounds and accents for your espresso metrics
-needle_temp, text_temp = style_gauge(ax_temp, "BOILER TEMPERATURE", 140.0, "°C", [0, 20, 40, 60, 80, 100, 114, 120, 140])
-needle_press, text_press = style_gauge(ax_press, "EXTRACTION PRESSURE", 12.0, "bar", [0, 2, 4, 6, 8, 9, 10, 12])
+needle_temp, text_temp = style_gauge(ax_temp, "BOILER TEMPERATURE", 140.0, "°C", [0, 20, 40, 60, 80, 100, 110, 114, 120, 140])
+needle_press, text_press = style_gauge(ax_press, "EXTRACTION PRESSURE", 12.0, "bar", [0, 2, 4, 6, 7, 8, 9, 10, 11, 12])
 
 # Recolor the needles for quick visual tracking
 needle_temp.set_color('#ff3b30')  # Red alert for hot boiler
 needle_press.set_color('#007aff') # Deep blue for extraction pressure water
+
+data_time = []
+data_tbrew = []
+data_tboiler = []
+data_pressure  = []
 
 # --- LIVE REFRESH DATA PIPELINE ---
 def update_gauges(frame):
@@ -85,8 +94,15 @@ def update_gauges(frame):
             
             # Match the 11 logging values from your newer log output format
             if len(nums) == 11:
+                current_time        = float(nums[0]) # t in sec
                 current_boiler_temp = float(nums[1])
                 current_pressure    = float(nums[9])
+                current_brew_temp   = float(nums[8]) # Brew Temp
+
+                data_time.append (current_time)
+                data_tboiler.append (current_boiler_temp)
+                data_tbrew.append (current_brew_temp)
+                data_pressure.append (current_pressure)
                 
                 # --- CALCULATE NEEDLE ANGLES ---
                 # Normalize metrics proportionally against maximum gauge values
@@ -104,6 +120,11 @@ def update_gauges(frame):
                 # Update digital reading displays
                 text_temp.set_text(f"{current_boiler_temp:.1f} °C")
                 text_press.set_text(f"{current_pressure:.2f} bar")
+
+                ax_graph_t.plot (data_time, data_tboiler)
+                ax_graph_t.plot (data_time, data_tbrew)
+                ax_graph_p.plot (data_time, data_pressure)
+
                 
         except Exception as e:
             # Prevent minor string formatting glitches from crashing the telemetry loop
