@@ -7,6 +7,7 @@ from matplotlib.animation import FuncAnimation
 # --- CONFIGURATION ---
 # Replace with your actual macOS device name from `ls /dev/cu.*`
 SERIAL_PORT = '/dev/cu.usbmodem1101'  # Example ESP32 port path
+#SERIAL_PORT = '/tmp/ttyV0'  # Example ESP32 port path
 BAUD_RATE = 115200
 
 # Regular expression to catch the 11 floating numbers from your CPy4Coffee output
@@ -31,11 +32,11 @@ TOTAL_RAD_SWEEP = MAX_RAD - MIN_RAD
 
 # Gauge Subplot 1: Temperature (0°C to 140°C)
 ax_temp = fig.add_subplot(121, polar=True, facecolor='#1e1e1e')
-ax_temp.set_theta_lim(MIN_RAD, MAX_RAD)
+ax_temp.set_thetalim(MIN_RAD, MAX_RAD)
 
 # Gauge Subplot 2: Pressure (0 to 12 Bar)
 ax_press = fig.add_subplot(122, polar=True, facecolor='#1e1e1e')
-ax_press.set_theta_lim(MIN_RAD, MAX_RAD)
+ax_press.set_thetalim(MIN_RAD, MAX_RAD)
 
 # --- STYLE THE DIALS ---
 def style_gauge(ax, title, max_val, unit, ticks):
@@ -79,6 +80,8 @@ def update_gauges(frame):
         try:
             line = ser.readline().decode('utf-8', errors='ignore').strip()
             nums = regex.findall(line)
+
+            print (line)
             
             # Match the 11 logging values from your newer log output format
             if len(nums) == 11:
