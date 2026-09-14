@@ -148,38 +148,66 @@ def style_gauge(ax, title, max_val, unit, ticks, second_hand=False):
         ax.plot([angle, angle], [rmax, rmax + stub_length], 
                 color='#ffffff', linewidth=2.5, clip_on=False)
 
-    # Set Point Marker (Boiler hack)
     if second_hand:
+        # Set Point Marker (Boiler hack)
         angle = MIN_RAD + (tboiler_set_point / max_val) * TOTAL_RAD_SWEEP
         setpt = ax.plot([angle, angle], [rmax - stub_length, rmax + stub_length], color='yellow', linewidth=4, clip_on=False)[0]
-        theta_start = MIN_RAD + (75 / max_val) * TOTAL_RAD_SWEEP
-        theta_end   = MIN_RAD + (85 / max_val) * TOTAL_RAD_SWEEP
-        
+
+        # Brew Temp Ranges Field "Dark Roast"
+        theta_start = MIN_RAD + (80 / max_val) * TOTAL_RAD_SWEEP
+        theta_end   = MIN_RAD + (83 / max_val) * TOTAL_RAD_SWEEP
         theta_range = np.linspace(theta_start, theta_end, 100)
         ax.fill_between(
             theta_range, 
             0.5*rmax, 
             rmax, 
-            color='#80ee80',      # Light pastel blue/gray color
-            alpha=0.6,            # Semi-transparent so gridlines stay visible
+            color='#4a2511',      # Light pastel blue/gray color
+            alpha=0.7,            # Semi-transparent so gridlines stay visible
             zorder=0              # Puts the background color BEHIND your data lines
         )
+
+        # Brew Temp Ranges Field "Medium Rosts"
+        theta_start = MIN_RAD + (85 / max_val) * TOTAL_RAD_SWEEP
+        theta_end   = MIN_RAD + (88 / max_val) * TOTAL_RAD_SWEEP
+        theta_range = np.linspace(theta_start, theta_end, 100)
+        ax.fill_between(
+            theta_range, 
+            0.5*rmax, 
+            rmax, 
+            color='#80471c',      # Light pastel blue/gray color
+            alpha=0.7,            # Semi-transparent so gridlines stay visible
+            zorder=0              # Puts the background color BEHIND your data lines
+        )
+        
+        # Brew Temp Ranges Field "Light Roasts"
+        theta_start = MIN_RAD + (90 / max_val) * TOTAL_RAD_SWEEP
+        theta_end   = MIN_RAD + (93 / max_val) * TOTAL_RAD_SWEEP
+        theta_range = np.linspace(theta_start, theta_end, 100)
+        ax.fill_between(
+            theta_range, 
+            0.5*rmax, 
+            rmax, 
+            color='#9a7b4f',      # Light pastel blue/gray color
+            alpha=0.7,            # Semi-transparent so gridlines stay visible
+            zorder=0              # Puts the background color BEHIND your data lines
+        )
+        
+        # Boiler OK Range
         theta_start = MIN_RAD + (110 / max_val) * TOTAL_RAD_SWEEP
         theta_end   = MIN_RAD + (118 / max_val) * TOTAL_RAD_SWEEP
-        
         theta_range = np.linspace(theta_start, theta_end, 100)
         ax.fill_between(
             theta_range, 
             0.5*rmax, 
             rmax, 
             color='#eeee80',      # Light pastel blue/gray color
-            alpha=0.6,            # Semi-transparent so gridlines stay visible
+            alpha=0.4,            # Semi-transparent so gridlines stay visible
             zorder=0              # Puts the background color BEHIND your data lines
         )
-        
+
+        # Over Temp        
         theta_start = MIN_RAD + (119 / max_val) * TOTAL_RAD_SWEEP
         theta_end   = MIN_RAD + (140 / max_val) * TOTAL_RAD_SWEEP
-        
         theta_range = np.linspace(theta_start, theta_end, 100)
         ax.fill_between(
             theta_range, 
@@ -191,7 +219,7 @@ def style_gauge(ax, title, max_val, unit, ticks, second_hand=False):
         )
     else:
         theta_start = MIN_RAD + (3 / max_val) * TOTAL_RAD_SWEEP
-        theta_end   = MIN_RAD + (6 / max_val) * TOTAL_RAD_SWEEP
+        theta_end   = MIN_RAD + (5 / max_val) * TOTAL_RAD_SWEEP
         
         theta_range = np.linspace(theta_start, theta_end, 100)
         ax.fill_between(
@@ -202,8 +230,8 @@ def style_gauge(ax, title, max_val, unit, ticks, second_hand=False):
             alpha=0.6,            # Semi-transparent so gridlines stay visible
             zorder=0              # Puts the background color BEHIND your data lines
         )
-        theta_start = MIN_RAD + (6 / max_val) * TOTAL_RAD_SWEEP
-        theta_end   = MIN_RAD + (8 / max_val) * TOTAL_RAD_SWEEP
+        theta_start = MIN_RAD + (5 / max_val) * TOTAL_RAD_SWEEP
+        theta_end   = MIN_RAD + (9 / max_val) * TOTAL_RAD_SWEEP
         
         theta_range = np.linspace(theta_start, theta_end, 100)
         ax.fill_between(
@@ -214,7 +242,7 @@ def style_gauge(ax, title, max_val, unit, ticks, second_hand=False):
             alpha=0.6,            # Semi-transparent so gridlines stay visible
             zorder=0              # Puts the background color BEHIND your data lines
         )
-        theta_start = MIN_RAD + (8.1 / max_val) * TOTAL_RAD_SWEEP
+        theta_start = MIN_RAD + (9.1 / max_val) * TOTAL_RAD_SWEEP
         theta_end   = MIN_RAD + (12 / max_val) * TOTAL_RAD_SWEEP
         
         theta_range = np.linspace(theta_start, theta_end, 100)
@@ -249,7 +277,7 @@ def style_gauge(ax, title, max_val, unit, ticks, second_hand=False):
         return needle, val_text
 
 # Configure specific bounds and accents for your espresso metrics
-needle_temp, needle2_temp, text_temp, text2_temp, setpt = style_gauge(ax_temp, "BOILER & BREW TEMPERATURES", 140.0, "°C", [0, 20, 40, 60, 80, 100, 110, 120, 140, tboiler_set_point], True)
+needle_temp, needle2_temp, text_temp, text2_temp, setpt = style_gauge(ax_temp, "BOILER & BREW TEMPERATURES", 140.0, "°C", [0, 20, 40, 60, 80, 90, 100, 110, 120, 140, tboiler_set_point], True)
 needle_press, text_press = style_gauge(ax_press, "EXTRACTION PRESSURE", 12.0, "bar", [-1, 0, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12])
 
 # Recolor the needles for quick visual tracking
