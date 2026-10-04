@@ -6,6 +6,7 @@ from matplotlib.animation import FuncAnimation
 from matplotlib.widgets import RadioButtons
 from scipy.signal import savgol_filter
 from scipy.signal import savgol_coeffs
+import traceback
 
 import logging
 
@@ -65,13 +66,12 @@ ax_graph_p.tick_params(axis='both', colors='#ffffff', labelsize=10)
 ax_graph_t.set_xlabel("Time in s", color='#ffffff')
 ax_graph_t.set_ylabel("Temperature in °C", color='#ffffff')
 #ax_graph_t.set_title("Boiler and Brew Temperature Over Time", color='#ffffff')
-ax_graph_t.legend()
+#ax_graph_t.legend()
 ax_graph_t.grid(True)
 
 ax_graph_p.set_xlabel("Time in s", color='#ffffff')
 ax_graph_p.set_ylabel("Brew Pressue in bar", color='#ffffff')
 #ax_graph_p.set_title("Brew Pressure Over Time", color='#ffffff')
-ax_graph_p.legend()
 ax_graph_p.grid(True)
 
 
@@ -123,7 +123,11 @@ line_pressure, = ax_graph_p.plot([], [], label="Pressure", color="#007aff", line
 # Buffers
 data_time, data_tbrew, data_tboiler, data_pressure = [], [], [], []
 
-tboiler_set_point = 114
+tstart = 0.0
+brewing = False
+start = True
+
+tboiler_set_point = 115
 
 # --- STYLE THE DIALS ---
 def style_gauge(ax, title, max_val, unit, ticks, second_hand=False):
@@ -278,7 +282,7 @@ def style_gauge(ax, title, max_val, unit, ticks, second_hand=False):
 
 # Configure specific bounds and accents for your espresso metrics
 needle_temp, needle2_temp, text_temp, text2_temp, setpt = style_gauge(ax_temp, "BOILER & BREW TEMPERATURES", 140.0, "°C", [0, 20, 40, 60, 80, 90, 100, 110, 120, 140, tboiler_set_point], True)
-needle_press, text_press = style_gauge(ax_press, "EXTRACTION PRESSURE", 12.0, "bar", [-1, 0, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+needle_press, text_press = style_gauge(ax_press, "EXTRACTION PRESSURE", 10.0, "bar", [-1, 0, 2, 4, 5, 6, 7, 8, 9, 10])
 
 # Recolor the needles for quick visual tracking
 needle_temp.set_color('#ff3b30')  # Red alert for hot boiler
@@ -296,8 +300,10 @@ coeffs = savgol_coeffs(window_length, polyorder, pos=window_length-1)
 
 # --- LIVE REFRESH DATA PIPELINE ---
 def update_gauges(frame):
+    global brewing, start, tstart, tboiler_set_point
+
     # Continuously parse any incoming text hanging in the system serial buffer
-    if ser.in_waiting > 0:
+    while ser.in_waiting > 0:
         try:
             line = ser.readline().decode('utf-8', errors='ignore').strip()
             nums = regex.findall(line)
@@ -314,17 +320,34 @@ def update_gauges(frame):
 
                 tboiler_set_point   = float(nums[2]) # Set Point 
 
-                data_time.append (current_time)
-                data_tboiler.append (current_boiler_temp)
-                data_tbrew.append (current_brew_temp)
-                data_pressure.append (current_pressure)
+                if start or brewing or current_pressure > 0.35:                
+                    data_time.append (current_time)
+                    data_tboiler.append (current_boiler_temp)
+                    data_tbrew.append (current_brew_temp)
+                    data_pressure.append (current_pressure)              
+                    
+                if brewing and current_pressure < 0.5: # detect end of brewing
+                    brewing = False
+
+                if not brewing and current_pressure > 0.5 and current_time - tstart > 60: # detect start pressing/charing
+                    brewing = True
+                    start = False
+                    tstart = current_time
+                    while len(data_time) > 10:
+                        data_time.pop(0)
+                        data_tboiler.pop(0)
+                        data_tbrew.pop(0)
+                        data_pressure.pop(0)
                 
+                print (start,brewing)
+                    
+                                
                 if len(data_time) > 2000:
                     data_time.pop(0)
                     data_tboiler.pop(0)
                     data_tbrew.pop(0)
                     data_pressure.pop(0)
-
+                
                 if len(data_time) > window_length:
                     # Fast dot product to get the latest smoothed point
                     current_boiler_temp = np.dot(np.array(data_tboiler[-window_length:]), coeffs)
@@ -339,7 +362,7 @@ def update_gauges(frame):
                 angle_tempbrew = MIN_RAD + (pct_tempbrew * TOTAL_RAD_SWEEP)
 
                 
-                pct_press = np.clip(current_pressure / 12.0, 0.0, 1.0)
+                pct_press = np.clip(current_pressure / 10.0, 0.0, 1.0)
                 angle_press = MIN_RAD + (pct_press * TOTAL_RAD_SWEEP)
                 
                 # --- UPDATE ANIMATION GRAPH LAYER ---
@@ -359,7 +382,10 @@ def update_gauges(frame):
                 text2_temp.set_text(f"{current_brew_temp:.1f} °C")
                 text_press.set_text(f"{current_pressure:.2f} bar")
 
-                t = np.array(data_time) - data_time[0]
+                if start and tstart == 0:
+                    tstart = current_time
+
+                t = np.array(data_time) - tstart
                 if len(data_time) > 2:
 
                     line_tboiler.set_data(t, data_tboiler)
@@ -377,13 +403,13 @@ def update_gauges(frame):
                         ax_graph_p.set_xlim (t[0], t[-1])
 
                     ax_graph_t.set_ylim (0, 120)
-                    ax_graph_p.set_ylim (0, 12)
+                    ax_graph_p.set_ylim (0, 10)
 
 
 
-                    
         except Exception as e:
-            # Prevent minor string formatting glitches from crashing the telemetry loop
+            logging.exception("update_gauges failed")
+            traceback.print_exc()
             pass
             
     return needle_temp, needle2_temp, needle_press, text_temp, text2_temp, text_press, line_tboiler, line_tbrew, line_pressure
